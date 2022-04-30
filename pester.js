@@ -27,7 +27,7 @@ async function checkForMeeting(){
 
 		if(meetingDate.getTime() == dateOnly.getTime()){
 			console.log(`Found meeting for ${m.meetingdate}, starting at ${m.starttime}`);
-			await scheduleRegisterCheck(meetingDate, m.starttime, m.endTime);
+			await scheduleRegisterCheck(m.meetingdate, m.starttime, m.endTime);
 		}
 	})
 }
@@ -43,7 +43,18 @@ async function scheduleRegisterCheck(date, startTime, endTime){
 //step 3
 //the scheduled task
 async function contactMissingParents(date){
+	let members = await OSM.getMemberSummary();
+	members = members.filter(m => m.attendance[date] === null && m.active && m.patrolid > 0);
 
+	members.forEach(async m => {
+		const details = await OSM.getMemberDetails(m.scoutid);
+		const contact = details.emergency;
+		
+		const message = `Hi ${contact.firstname}, is ${m.firstname} coming to band tonight?`;
+		console.log(`Message: ${message}`);
+		console.log(`Sending to ${contact.phone1}`);
+		console.log();
+	});
 }
 
 //step 4

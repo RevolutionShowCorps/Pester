@@ -16,7 +16,7 @@ async function main(){
 		}
 	}
 
-	const members = await OSM.getMemberAttendance();
+	const members = await OSM.getMemberSummary();
 	console.log(members);
 
 }

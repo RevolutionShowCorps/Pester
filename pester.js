@@ -1,3 +1,5 @@
+const schedule = require('node-schedule');
+
 const config = require('./config');
 const OSM = require('./lib/OSM')(config, 'section:attendance:read+section:member:read+section:programme:read'); //TODO do something fancy with scopes
 
@@ -27,18 +29,23 @@ async function checkForMeeting(){
 		meetingDate.setHours(0, 0, 0, 0);
 
 		if(meetingDate.getTime() == dateOnly.getTime()){
-			console.log(`Found meeting for ${m.meetingdate}, starting at ${m.starttime}`);
-			await scheduleRegisterCheck(m.meetingdate, m.starttime, m.endTime);
+			await scheduleRegisterCheck(m.meetingdate, m.starttime);
 		}
 	})
 }
 
 //step 2
-//schedule tasks (steps 3 and 4)
-async function scheduleRegisterCheck(date, startTime, endTime){
-	await contactMissingParents(date);
+//schedule tasks (steps 3)
+async function scheduleRegisterCheck(date, startTime){
+	const scheduleDate = new Date("2022-04-30 14:10"); //temp
+	//scheduleDate.setMinutes(scheduleDate.getMinutes() + (scheduleDate.getTimezoneOffset() * -1)); //fix timezone
 
-	await updateRegisters(date);
+	console.log(`Scheduling contact for ${scheduleDate}`);
+
+	const job = schedule.scheduleJob(scheduleDate, async () => {
+		console.log("Sending scheduled messages");
+		await contactMissingParents(date);
+	});
 }
 
 //step 3

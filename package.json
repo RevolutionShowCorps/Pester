@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "node-fetch": "^2.6.7",
+    "node-schedule": "^2.1.0",
     "twilio": "^3.76.1"
   }
 }

@@ -1,7 +1,8 @@
 const config = require('./config');
 const OSM = require('./lib/OSM')(config, 'section:attendance:read+section:member:read+section:programme:read'); //TODO do something fancy with scopes
 
-const section_name = 'Queensbury Scout Band';
+const twilioConfig = require('./twilio');
+const twilio = require('twilio')(twilioConfig.sid, twilioConfig.token);
 
 const today = new Date('2022-04-28'); //TODO get curr date
 
@@ -50,18 +51,15 @@ async function contactMissingParents(date){
 		const details = await OSM.getMemberDetails(m.scoutid);
 		const contact = details.emergency;
 		
-		const message = `Hi ${contact.firstname}, is ${m.firstname} coming to band tonight?`;
+		const message = `Hi ${contact.firstname}, is ${m.firstname} coming to Revo Juniors tonight? Cheers, Luke`;
 		console.log(`Message: ${message}`);
 		console.log(`Sending to ${contact.phone1}`);
-		console.log();
+		await twilio.messages.create({
+			body: message,
+			from: twilioConfig.number,
+			to: twilioConfig.testRecipient //contact.phone1
+		});
 	});
 }
-
-//step 4
-//tidyup
-//mark questionables as not attended
-async function updateRegisters(date){
-
-} 
 
 main();

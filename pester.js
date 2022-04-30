@@ -10,8 +10,14 @@ async function main(){
 
 	if(!OSM.initialised()){
 		const section = sections.filter(s => s.section_name.toLowerCase().trim() === section_name.toLowerCase().trim())[0];
-		OSM.setTermFromSection(section, Date.now());
+		if(!OSM.setTermFromSection(section, Date.now())){
+			console.error("Could not find suitable section and term - please check you have set up OSM correctly and are passing in the correct OAuth values");
+			return -1;
+		}
 	}
+
+	const members = await OSM.getMemberAttendance();
+	console.log(members);
 
 }
 

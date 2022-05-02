@@ -11,34 +11,77 @@ async function main(){
 
 	members.forEach(m => {
 		if(patrols.hasOwnProperty(m.patrol)){
-			patrols[m.patrol].push(m);
+			//if patrol leader, add to start, otherwise add to end
+			if(m.patrolleader > 0){
+				patrols[m.patrol].unshift(m);
+			} else {
+				patrols[m.patrol].push(m);
+			}
 		} else {
 			patrols[m.patrol] = [m];
 		}
 	});
 
 	let attendanceReport = '';
-	let count = 0, missing = 0;
+	let count = 0, missing = 0, subsDue = 0;
 
-	Object.keys(patrols).forEach(name => {
-		attendanceReport += `<h2>${name}</h2>`
+	let patrolNames = Object.keys(patrols);
+	for(let i = 0; i < patrolNames.length; i++){
+		const name = patrolNames[i].trim();
+		const isJuniorPatrol = name.toLowerCase().indexOf("junior") > -1;
+		let list = '';
+		let sectionSubs = 0;
 
-		patrols[name].forEach(m => {
+		for(let j = 0; j < patrols[name].length; j++){
+			const m = patrols[name][j];
+			const member = await OSM.getMemberDetails(m.scoutid);
+			if(member.customisable_data.cf_is_junior_.trim().toLowerCase() == 'no' && !isJuniorPatrol){
+				continue;
+			}
+
+			const mSub = ((name == 'Leaders' || m.patrolleader > 0) ? 0 : member.customisable_data.cf_is_senior_.trim().toLowerCase() == 'no' ? 3 : 1);
+
 			count++;
-			attendanceReport += `<p>${m.firstname} ${m.lastname}`
+			list += `<p>${m.firstname} ${m.lastname}`
+			console.log(`${m.firstname} ${m.lastname} should pay subs of £${mSub}`);
+
+			if(m.patrolleader > 0){
+				list += " (instructor)";
+			} else if(name != 'Leaders'){
+				list += ` £${mSub}`;
+				sectionSubs += mSub;
+			}
 
 			if(m.attendance[today] === false){
 				missing++;
-				attendanceReport += " - <b>Not Attending</b>";
+				list += " - <b>Not Attending</b>";
+
+				if(name != 'Leaders' || m.patrolleader <= 0){
+					sectionSubs -= mSub;
+				}
 			}
 
-			attendanceReport += "</p>";
-		})
-	});
+			list += "</p>";
+		}
 
-	attendanceReport = `<p>Here is the attendance report for the rehearsal on ${today}. There are ${missing} absent from a total of ${count}.</p>${attendanceReport}`
+		if(name == 'Leaders'){
+			sectionSubs = 0;
+		}
 
+		if(list != ''){
+			attendanceReport += `<h2>${name}${sectionSubs > 0 ? " - £" + sectionSubs : ""}</h2>${list}`;
+		}
+
+		subsDue += sectionSubs;
+	}
+
+	attendanceReport = `<p>Here is the attendance report for the rehearsal on ${today}. There are ${missing} absent from a total of ${count}.</p>${attendanceReport}<br /><p>Total subs due: <b>£${subsDue}</b></p>`
+
+	console.log("Sending report...");
 	console.log(attendanceReport);
+
+	console.log("Report sent!");
+
 }
 
 main();

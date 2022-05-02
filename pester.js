@@ -37,14 +37,16 @@ async function checkForMeeting(){
 //step 2
 //schedule tasks (steps 3)
 async function scheduleRegisterCheck(date, startTime){
-	const scheduleDate = new Date("2022-04-30 14:10"); //temp
+	startTime = '15:16';
+	date = new Date(Date.now()).toISOString().split('T')[0];
+	const scheduleDate = new Date(`${date} ${startTime}`); //temp
 	//scheduleDate.setMinutes(scheduleDate.getMinutes() + (scheduleDate.getTimezoneOffset() * -1)); //fix timezone
 
 	console.log(`Scheduling contact for ${scheduleDate}`);
 
 	const job = schedule.scheduleJob(scheduleDate, async () => {
 		console.log("Sending scheduled messages");
-		await contactMissingParents(date);
+		await contactMissingParents('2022-04-28');
 	});
 }
 
@@ -52,10 +54,17 @@ async function scheduleRegisterCheck(date, startTime){
 //the scheduled task
 async function contactMissingParents(date){
 	let members = await OSM.getMemberSummary();
-	members = members.filter(m => m.attendance[date] === null && m.active && m.patrolid > 0);
+	console.log(members);
+	members = members.filter(m => m.attendance[date] === null && m.active && m.patrolleader <= 0);
+	console.log(members);
 
 	members.forEach(async m => {
 		const details = await OSM.getMemberDetails(m.scoutid);
+		//make sure they're actually a junior
+		if(details.customisable_data.cf_is_junior_.trim().toLowerCase() != 'yes'){
+			return;
+		}
+
 		const contact = details.emergency;
 		
 		const message = `Hi ${contact.firstname}, is ${m.firstname} coming to Revo Juniors tonight? Cheers, Luke`;

@@ -6,7 +6,7 @@ const OSM = require('./lib/OSM')(config, 'section:attendance:read+section:member
 const twilioConfig = require('./twilio');
 const twilio = require('twilio')(twilioConfig.sid, twilioConfig.token);
 
-const today = new Date('2022-04-28'); //TODO get curr date
+const today = new Date(Date.now());
 
 async function main(){
 	//initialises section and term for us!
@@ -28,7 +28,7 @@ async function checkForMeeting(){
 		const meetingDate = new Date(m.meetingdate);
 		meetingDate.setHours(0, 0, 0, 0);
 
-		if(meetingDate.getTime() == dateOnly.getTime()){
+		if(meetingDate.getTime() == dateOnly.getTime() && m.title.toLowerCase() == 'juniors'){
 			await scheduleRegisterCheck(m.meetingdate, m.starttime);
 		}
 	})
@@ -37,16 +37,14 @@ async function checkForMeeting(){
 //step 2
 //schedule tasks (steps 3)
 async function scheduleRegisterCheck(date, startTime){
-	startTime = '15:16';
-	date = new Date(Date.now()).toISOString().split('T')[0];
-	const scheduleDate = new Date(`${date} ${startTime}`); //temp
-	//scheduleDate.setMinutes(scheduleDate.getMinutes() + (scheduleDate.getTimezoneOffset() * -1)); //fix timezone
+	let scheduleDate = new Date(`${date} ${startTime}`); //temp
+	scheduleDate.setHours(scheduleDate.getHours(), scheduleDate.getMinutes() + 15);
 
 	console.log(`Scheduling contact for ${scheduleDate}`);
 
 	const job = schedule.scheduleJob(scheduleDate, async () => {
 		console.log("Sending scheduled messages");
-		await contactMissingParents('2022-04-28');
+		await contactMissingParents(date);
 	});
 }
 

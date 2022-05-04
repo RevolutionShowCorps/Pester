@@ -1,7 +1,11 @@
 const config = require('./config');
 const OSM = require('./lib/OSM')(config, 'section:attendance:read+section:member:read+section:programme:read'); //TODO do something fancy with scopes
 
-const today = '2022-05-05';
+let tomorrow = new Date(Date.now());
+tomorrow.setDate(tomorrow.getDate() + 1);
+tomorrow = tomorrow.toISOString().split('T')[0];
+
+const withSubs = false;
 
 async function main(){
 	await OSM.getSections();
@@ -39,7 +43,7 @@ async function main(){
 				continue;
 			}
 
-			const mSub = ((name == 'Leaders' || m.patrolleader > 0) ? 0 : member.customisable_data.cf_is_senior_.trim().toLowerCase() == 'no' ? 3 : 1);
+			const mSub = withSubs ? ((name == 'Leaders' || m.patrolleader > 0) ? 0 : member.customisable_data.cf_is_senior_.trim().toLowerCase() == 'no' ? 3 : 1) : 0;
 
 			count++;
 			list += `<p>${m.firstname} ${m.lastname}`
@@ -47,18 +51,20 @@ async function main(){
 
 			if(m.patrolleader > 0){
 				list += " (instructor)";
-			} else if(name != 'Leaders'){
+			} else if(mSub > 0){
 				list += ` £${mSub}`;
 				sectionSubs += mSub;
 			}
 
-			if(m.attendance[today] === false){
+			if(m.attendance[tomorrow] === false){
 				missing++;
 				list += " - <b>Not Attending</b>";
 
 				if(name != 'Leaders' || m.patrolleader <= 0){
 					sectionSubs -= mSub;
 				}
+			} else {
+				console.log(m.attendance[tomorrow]);
 			}
 
 			list += "</p>";
@@ -75,7 +81,11 @@ async function main(){
 		subsDue += sectionSubs;
 	}
 
-	attendanceReport = `<p>Here is the attendance report for the rehearsal on ${today}. There are ${missing} absent from a total of ${count}.</p>${attendanceReport}<br /><p>Total subs due: <b>£${subsDue}</b></p>`
+	attendanceReport = `<p>Here is the attendance report for the rehearsal on ${tomorrow}. There are ${missing} absent from a total of ${count}.</p>${attendanceReport}`;
+
+	if(subsDue > 0){
+		attendanceReport += `<br /><p>Total subs due: <b>£${subsDue}</b></p>`;
+	}
 
 	console.log("Sending report...");
 	console.log(attendanceReport);
